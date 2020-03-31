@@ -51,7 +51,7 @@ host_name () {
 
 # pull the ssh keys from the github repo and build the autorized_keys file
 ssh_keys () {
-	#ssh-keygen -f ~/.ssh/id_rsa
+	ssh-keygen -f ~/.ssh/id_rsa
 	echo "Add this key to github now at this link:
 	https://github.com/settings/ssh/new
 	"
@@ -163,7 +163,7 @@ locale () {
 
 }
 
-ch_passwd
+ch_password
 locale
 install_pkgs
 ssh_keys
