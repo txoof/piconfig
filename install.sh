@@ -92,6 +92,24 @@ spi_setup () {
   sudo dtparam spi=on
 }
 
+function valid_ip()
+{
+    local  ip=$1
+    local  stat=1
+
+    if [[ $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+        OIFS=$IFS
+        IFS='.'
+        ip=($ip)
+        IFS=$OIFS
+        [[ ${ip[0]} -le 255 && ${ip[1]} -le 255 \
+            && ${ip[2]} -le 255 && ${ip[3]} -le 255 ]]
+        stat=$?
+    fi
+    return $stat
+}
+
+
 static_ip () {
   interfaces=()
   echo "choose an interface for a static IP"
@@ -104,7 +122,7 @@ static_ip () {
   printf "$iface\n"
 
   interfaces+=("$iface")
-  
+ 
   echo ${interfaces}
   contains () {
     typeset _x;
@@ -138,7 +156,15 @@ static_ip () {
 
   echo "Restart required for changes to take effect"
 }
+
+
+locale () {
+  sudo dpkg-reconfigure tzdata
+
+}
+
 ch_passwd
+locale
 install_pkgs
 ssh_keys
 dot_files
