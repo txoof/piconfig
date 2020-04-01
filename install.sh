@@ -1,13 +1,7 @@
 #!/bin/bash
 
 # list of packages that should be installed immediately
-packages="
-git
-vim
-python3
-python3-pip
-tmux
-"
+packages=( git vim python3 python3-pip tmux)
 
 # keys are stored one per file in the format `idrsa_user@host_YYYY.MM.DD`
 sshkey_repo="git@github.com:txoof/ssh_keys.git"
@@ -28,10 +22,41 @@ ch_password () {
 
 # install packages
 install_pkgs () {
-	echo "updating and installing packages"
-	sudo apt-get update
-	sudo apt-get ---with-new-pkgs --assume-yes upgrade
-	sudo apt-get --assume-yes install $packages
+  CONTINUE="True"
+
+  while [ "$CONTINUE" == "True" ]; do
+    echo "debian packages to install:"
+    printf '%s\n' "${packages[@]}"
+
+    echo " "
+    echo "Add packages by typing the package name; remove packages with -NAME"
+    echo "Type `*Done` when done"
+    read -p "Package name: " package
+
+    if [ "$package" == "*Done" ]; then
+      CONTINUE="False"
+    else
+      if [[ ${package:0:1} == "-" ]] ; then
+	package=${package#?}
+	for i in "${!packages[@]}"; do
+	  if [[ ${packages[i]} = $package ]]; then
+	    unset 'packages[i]'
+	  fi
+	done
+
+      else
+	packages+=( $package )
+      fi
+    fi
+
+  done
+  
+  printf -v install '%s ' "${packages[@]}"
+  echo " "
+  echo "updating packages and installing packages"
+  sudo apt-get update
+  sudo apt-get ---with-new-pkgs --assume-yes upgrade
+  sudo apt-get --assume-yes install $install
 }
 
 # set the hostname
@@ -46,6 +71,9 @@ host_name () {
 			[yY]* ) sudo shutdown -r now;;
 			[nN]* ) echo "please reboot for hostname changes to take effect";;
 		esac
+        else
+          echo "hostname unchanged"
+          return 0
 	fi
 }
 
@@ -92,47 +120,39 @@ spi_setup () {
   sudo dtparam spi=on
 }
 
-function valid_ip()
-{
-    local  ip=$1
-    local  stat=1
-
-    if [[ $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-        OIFS=$IFS
-        IFS='.'
-        ip=($ip)
-        IFS=$OIFS
-        [[ ${ip[0]} -le 255 && ${ip[1]} -le 255 \
-            && ${ip[2]} -le 255 && ${ip[3]} -le 255 ]]
-        stat=$?
-    fi
-    return $stat
+# function for checking input
+# usage: contains array variable
+contains () {
+  typeset _x;
+  typeset -n _A="$1"
+  for _x in "${_A[@]}"; do
+    [ "$_x" = "$2" ] && return 0
+  done
+  return 1
 }
 
 
 static_ip () {
   interfaces=()
-  echo "choose an interface for a static IP"
+  echo "Configuring static IP"
+  echo "Choose an interface to configure -- enter 'None' to skip"
+  # list all the available interfaces
   for iface in $(ifconfig | cut -d ' ' -f1 | tr ':' '\n'|awk NF)
   do
     printf "$iface\n"
     interfaces+=("$iface")
   done
+  # add 'None' as an option in the list
   iface="None"
   printf "$iface\n"
-
   interfaces+=("$iface")
- 
+
+
+
+  # loop until user enters a valid interface from the list
   echo ${interfaces}
-  contains () {
-    typeset _x;
-    typeset -n _A="$1"
-    for _x in "${_A[@]}"; do
-      [ "$_x" = "$2" ] && return 0
-    done
-    return 1
-  }
-  while read -p "choose an interface to configure for a static IP: " -r user_iface;
+  echo " "
+  while read -p "Interface: " -r user_iface;
       ! contains interfaces "$user_iface"; do
     echo "$user_iface is not a valid interface!"
   done
@@ -141,9 +161,14 @@ static_ip () {
       echo "skipping static IP configuration"; return 0;;
   esac
 
+
+
+
   read -p "Enter the static IP address in the format xxx.xxx.xxx.xxx/yy: " IP
   read -p "enter static router address in the format xxx.xxx.xxx.xxx: " ROUTER
   read -p "enter the static DNS in the format xxx.xxx.xxx.xxx xxx.xxx.xxx.xxx: " DNS
+
+
 
   tmpFile=/tmp/static.ip
   echo "interface $user_iface" > $tmpFile
@@ -151,8 +176,22 @@ static_ip () {
   echo "static routers=$ROUTER" >> $tmpFile
   echo "static domain_name_servers=$DNS" >> $tmpFile
 
+  echo "current /etc/dhcpcd.conf"
+  echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+  cat /etc/dhcpcd.conf
 
-  cat $tmpFile | sudo tee -a /etc/dhcpcd.conf
+  echo "appending dhcpcd.conf"
+  echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+  cat $tmpFile
+
+  echo " "
+  read -p "Continue with replacement? [Y/n]: " REPLACE
+  case $REPLACE in
+    [nN]*) echo "skipping..."; return 0;;
+    [yY]*) echo "replacing here" cat $tmpFile | sudo tee -a /etc/dhcpcd.conf;;
+        *) echo "skipping..."; return 0;;
+  esac
+
 
   echo "Restart required for changes to take effect"
 }
