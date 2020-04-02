@@ -30,7 +30,7 @@ install_pkgs () {
 
     echo " "
     echo "Add packages by typing the package name; remove packages with -NAME"
-    echo "Type `*Done` when done"
+    echo "Type '*Done' when done"
     read -p "Package name: " package
 
     if [ "$package" == "*Done" ]; then
