@@ -15,6 +15,8 @@ BLACKLIST=/etc/modprobe.d/raspi-blacklist.conf
 
 # change the default password
 ch_password () {
+	echo " "
+	echo "Setting password for user $USER"
 	echo "setting password..."
 	passwd
 	echo " "
@@ -23,14 +25,15 @@ ch_password () {
 # install packages
 install_pkgs () {
   CONTINUE="True"
-
+  echo " "
+  echo "preparing to install debian packages"
   while [ "$CONTINUE" == "True" ]; do
     echo "debian packages to install:"
     printf '%s\n' "${packages[@]}"
 
     echo " "
-    echo "Add packages by typing the package name; remove packages with -NAME"
-    echo "Type '*Done' when done"
+    echo "Add packages by typing the package name; remove packages with '-name'"
+    echo "Type '*Done' to begin installing packages"
     read -p "Package name: " package
 
     if [ "$package" == "*Done" ]; then
@@ -57,12 +60,17 @@ install_pkgs () {
   sudo apt-get update
   sudo apt-get ---with-new-pkgs --assume-yes upgrade
   sudo apt-get --assume-yes install $install
+  
+  echo " "
 }
 
 # set the hostname
 host_name () {
+	echo " "
 	CURRENT_HOSTNAME=`cat /etc/hostname | tr -d " \t\n\r"`
-	read -p "Please enter a new hostname: " NEW_HOSTNAME
+	echo "Current hostname: $CURRENT_HOSTNAME"
+	echo "Would you like to change this devices hostname?"
+	read -p "Please enter a new hostname or press enter to skip: " NEW_HOSTNAME
 	if [[ $NEW_HOSTNAME ]]; then
 		echo $NEW_HOSTNAME | sudo tee -a /etc/hostname
 		sudo sed -i "s/127.0.1.1.*$CURRENT_HOSTNAME/127.0.1.1\t$NEW_HOSTNAME/g" /etc/hosts
@@ -73,30 +81,37 @@ host_name () {
 		esac
         else
           echo "hostname unchanged"
+	  echo " "
           return 0
 	fi
 }
 
 # pull the ssh keys from the github repo and build the autorized_keys file
 ssh_keys () {
-	ssh-keygen -f ~/.ssh/id_rsa
+	echo " "
+	echo "Checking ssh keys"
+	if [ ! -f ~/.ssh/id_rsa ]; then
+	  ssh-keygen -f ~/.ssh/id_rsa
+	fi
+	
 	echo "Add this key to github now at this link:
-	https://github.com/settings/ssh/new
+	https://github.com/settings/ssh/new 
 	"
+	
 	cat ~/.ssh/id_rsa.pub
         read -p "
         press any key to continue...
         "
-        echo "preparing authorized_keys..."
-        pushd /tmp/
-        git clone $sshkey_repo
-        dirName=$(basename $sshkey_repo | cut -f 1 -d '.')
-        pushd $dirName
-        cat idrsa* >> ~/.ssh/authorized_keys
-        popd
-        popd
-        echo "cleaning up"
-        rm -rf /tmp/ssh_keys
+#         echo "preparing authorized_keys..."
+#         pushd /tmp/
+#         git clone $sshkey_repo
+#         dirName=$(basename $sshkey_repo | cut -f 1 -d '.')
+#         pushd $dirName
+#         cat idrsa* >> ~/.ssh/authorized_keys
+#         popd
+#         popd
+#         echo "cleaning up"
+#         rm -rf /tmp/ssh_keys
 }
 
 # sync dotfiles
