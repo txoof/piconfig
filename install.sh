@@ -102,16 +102,16 @@ ssh_keys () {
         read -p "
         press any key to continue...
         "
-#         echo "preparing authorized_keys..."
-#         pushd /tmp/
-#         git clone $sshkey_repo
-#         dirName=$(basename $sshkey_repo | cut -f 1 -d '.')
-#         pushd $dirName
-#         cat idrsa* >> ~/.ssh/authorized_keys
-#         popd
-#         popd
-#         echo "cleaning up"
-#         rm -rf /tmp/ssh_keys
+        echo "preparing authorized_keys..."
+        pushd /tmp/
+        git clone $sshkey_repo
+        dirName=$(basename $sshkey_repo | cut -f 1 -d '.')
+        pushd $dirName
+        cat idrsa* >> ~/.ssh/authorized_keys
+        popd
+        popd
+        echo "cleaning up"
+        rm -rf /tmp/ssh_keys
 }
 
 # sync dotfiles
