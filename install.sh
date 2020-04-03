@@ -72,7 +72,7 @@ host_name () {
 	echo "Would you like to change this devices hostname?"
 	read -p "Please enter a new hostname or press enter to skip: " NEW_HOSTNAME
 	if [[ $NEW_HOSTNAME ]]; then
-		echo $NEW_HOSTNAME | sudo tee -a /etc/hostname
+		echo $NEW_HOSTNAME | sudo tee /etc/hostname
 		sudo sed -i "s/127.0.1.1.*$CURRENT_HOSTNAME/127.0.1.1\t$NEW_HOSTNAME/g" /etc/hosts
 		read -t 10 -p "Reboot in 10 Seconds N/y: " REBOOT
 		case $REBOOT in
