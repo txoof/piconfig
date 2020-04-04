@@ -14,6 +14,7 @@ One-shot configuration of raspberry pi through a bash script. PiConfig makes it 
 SSH to new pi `ssh pi@raspberrypi.local`
 
 Copy and paste the following line on the prompt
+
 `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/txoof/piconfig/master/install.sh)"`
 
 ## Opperation
