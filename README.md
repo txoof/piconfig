@@ -20,7 +20,7 @@ Copy and paste the following line on the prompt to run the entire setup script
 **ALTERNATIVELY**
 Just add the appropriate `authroized_host` keys using the following oneshot below:
 
-`bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/txoof/piconfig/master/keys.sh)"`
+`/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/txoof/piconfig/master/keys.sh)"`
 
 ## Opperation
 PiConfig does the following on execution:
