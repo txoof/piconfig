@@ -1,7 +1,7 @@
 #!/bin/bash
 sshkey_repo_name="txoof/ssh_keys"
 
-sshkey_repo="git@github.com:$ssh_key_repo_name.git"
+sshkey_repo="git@github.com:$sshkey_repo_name.git"
 sshkey_link="https://github.com/$sshkey_repo_name/settings/keys"
 
 ssh_keys () {
