@@ -29,4 +29,6 @@ ssh_keys () {
         echo "cleaning up"
         rm -rf /tmp/ssh_keys
 
+}
+
 ssh_keys
