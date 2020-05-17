@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # list of packages that should be installed immediately
-packages=( git vim python3 python3-pip tmux)
+packages=(git vim python3 python3-pip tmux)
 
 # keys are stored one per file in the format `idrsa_user@host_YYYY.MM.DD`
 sshkey_repo="git@github.com:txoof/ssh_keys.git"
@@ -34,7 +34,7 @@ install_pkgs () {
     echo " "
     echo "Add packages by typing the package name; remove packages with '-name'"
     echo "Type '*Done' to begin installing packages"
-    read -p "Package name: " package
+    read -r -p "Package name: " package
 
     if [ "$package" == "*Done" ]; then
       CONTINUE="False"
@@ -42,13 +42,13 @@ install_pkgs () {
       if [[ ${package:0:1} == "-" ]] ; then
 	package=${package#?}
 	for i in "${!packages[@]}"; do
-	  if [[ ${packages[i]} = $package ]]; then
+	  if [[ ${packages[i]} = "$package" ]]; then
 	    unset 'packages[i]'
 	  fi
 	done
 
       else
-	packages+=( $package )
+	packages+=( "$package" )
       fi
     fi
 
@@ -59,7 +59,7 @@ install_pkgs () {
   echo "updating packages and installing packages"
   sudo apt-get update
   sudo apt-get ---with-new-pkgs --assume-yes upgrade
-  sudo apt-get --assume-yes install $install
+  sudo apt-get --assume-yes install "$install"
   
   echo " "
 }
@@ -67,14 +67,14 @@ install_pkgs () {
 # set the hostname
 host_name () {
 	echo " "
-	CURRENT_HOSTNAME=`cat /etc/hostname | tr -d " \t\n\r"`
+    CURRENT_HOSTNAME=$(< /etc/hostname tr -d " \t\n\r")
 	echo "Current hostname: $CURRENT_HOSTNAME"
 	echo "Would you like to change this devices hostname?"
-	read -p "Please enter a new hostname or press enter to skip: " NEW_HOSTNAME
-	if [[ $NEW_HOSTNAME ]]; then
-		echo $NEW_HOSTNAME | sudo tee /etc/hostname
+	read -r -p "Please enter a new hostname or press enter to skip: " NEW_HOSTNAME
+	if [[ "$NEW_HOSTNAME" ]]; then
+		echo "$NEW_HOSTNAME" | sudo tee /etc/hostname
 		sudo sed -i "s/127.0.1.1.*$CURRENT_HOSTNAME/127.0.1.1\t$NEW_HOSTNAME/g" /etc/hosts
-		read -t 10 -p "Reboot in 10 Seconds N/y: " REBOOT
+		read -r -t 10 -p "Reboot in 10 Seconds N/y: " REBOOT
 		case $REBOOT in
 			[yY]* ) sudo shutdown -r now;;
 			[nN]* ) echo "please reboot for hostname changes to take effect";;
@@ -90,9 +90,7 @@ host_name () {
 ssh_keys () {
 	echo " "
 	echo "Checking ssh keys"
-	if [ ! -f ~/.ssh/id_rsa ]; then
-	  ssh-keygen -f ~/.ssh/id_rsa
-	fi
+	[ -f ~/.ssh/id_rsa ] || ssh-keygen -f ~/.ssh/id_rsa
 	
 	echo "Add this key to github now at this link:
 	https://github.com/settings/ssh/new 
@@ -106,7 +104,7 @@ ssh_keys () {
         pushd /tmp/
         git clone $sshkey_repo
         dirName=$(basename $sshkey_repo | cut -f 1 -d '.')
-        pushd $dirName
+        pushd "$dirName"
         cat idrsa* >> ~/.ssh/authorized_keys
         popd
         popd
@@ -128,9 +126,7 @@ dot_files () {
 # enable spi
 spi_setup () {
   echo "enabling SPI"
-  if ! [ -e $BLACKLIST ]; then
-    sudo touch $BLACKLIST
-  fi
+  [ -e $BLACKLIST ] || sudo touch $BLACKLIST
   sudo sed $BLACKLIST -i -e "s/^\(blacklist[[:space:]]*spi[-_]bcm2708\)/#\1/"
   sudo dtparam spi=on
 }
@@ -154,18 +150,18 @@ static_ip () {
   # list all the available interfaces
   for iface in $(ifconfig | cut -d ' ' -f1 | tr ':' '\n'|awk NF)
   do
-    printf "$iface\n"
+    printf "%s\n" "$iface"
     interfaces+=("$iface")
   done
   # add 'None' as an option in the list
   iface="None"
-  printf "$iface\n"
+  printf "%s\n" "$iface"
   interfaces+=("$iface")
 
 
 
   # loop until user enters a valid interface from the list
-  echo ${interfaces}
+  echo "${interfaces}"
   echo " "
   while read -p "Interface: " -r user_iface;
       ! contains interfaces "$user_iface"; do
@@ -179,17 +175,19 @@ static_ip () {
 
 
 
-  read -p "Enter the static IP address in the format xxx.xxx.xxx.xxx/yy: " IP
-  read -p "enter static router address in the format xxx.xxx.xxx.xxx: " ROUTER
-  read -p "enter the static DNS in the format xxx.xxx.xxx.xxx xxx.xxx.xxx.xxx: " DNS
+  read -r -p "Enter the static IP address in the format xxx.xxx.xxx.xxx/yy: " IP
+  read -r -p "enter static router address in the format xxx.xxx.xxx.xxx: " ROUTER
+  read -r -p "enter the static DNS in the format xxx.xxx.xxx.xxx xxx.xxx.xxx.xxx: " DNS
 
 
 
   tmpFile=/tmp/static.ip
   echo "interface $user_iface" > $tmpFile
-  echo "static ip_address=$IP" >> $tmpFile
-  echo "static routers=$ROUTER" >> $tmpFile
-  echo "static domain_name_servers=$DNS" >> $tmpFile
+  {
+      echo "static ip_address=$IP"
+      echo "static routers=$ROUTER"
+      echo "static domain_name_servers=$DNS"
+  } >> "$tmpFile"
 
   echo "current /etc/dhcpcd.conf"
   echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
@@ -197,13 +195,13 @@ static_ip () {
 
   echo "appending dhcpcd.conf"
   echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-  cat $tmpFile
+  cat "$tmpFile"
 
   echo " "
-  read -p "Continue with replacement? [Y/n]: " REPLACE
-  case $REPLACE in
+  read -r -p "Continue with replacement? [Y/n]: " REPLACE
+  case "$REPLACE" in
     [nN]*) echo "skipping..."; return 0;;
-    [yY]*) echo "replacing here" cat $tmpFile | sudo tee -a /etc/dhcpcd.conf;;
+    [yY]*) echo "replacing here" cat "$tmpFile" | sudo tee -a /etc/dhcpcd.conf;;
         *) echo "skipping..."; return 0;;
   esac
 
@@ -214,7 +212,6 @@ static_ip () {
 
 locale () {
   sudo dpkg-reconfigure tzdata
-
 }
 
 ch_password
